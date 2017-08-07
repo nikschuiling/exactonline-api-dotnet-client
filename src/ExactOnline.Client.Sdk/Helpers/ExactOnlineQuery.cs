@@ -156,12 +156,26 @@ namespace ExactOnline.Client.Sdk.Helpers
 			return this;
 		}
 
-		/// <summary>
-		/// Specify the field to order by
-		/// </summary>
-		/// <param name="orderby"></param>
-		/// <returns></returns>
-		public ExactOnlineQuery<T> OrderBy(string orderby)
+        /// <summary>
+        /// Paging: Specify the skip token
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public ExactOnlineQuery<T> Skip(string token)
+        {
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                _skip = string.Format("$skiptoken={0}", token);
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Specify the field to order by
+        /// </summary>
+        /// <param name="orderby"></param>
+        /// <returns></returns>
+        public ExactOnlineQuery<T> OrderBy(string orderby)
 		{
 			return OrderBy(new[] { orderby });
 		}
@@ -179,6 +193,7 @@ namespace ExactOnline.Client.Sdk.Helpers
 			_orderby = string.Format("$orderby={0}", orderbyclause);
 			return this;
 		}
+
 
 		/// <summary>
 		/// Field to Expand with coupled entities
@@ -209,10 +224,19 @@ namespace ExactOnline.Client.Sdk.Helpers
 			return _controller.Get(CreateODataQuery(true));
 		}
 
-		/// <summary>
-		/// Returns one instance of an entity using the specified identifier
-		/// </summary>
-		public T GetEntity(string identifier)
+        /// <summary>
+        /// Returns a List of entities using the specified query
+        /// </summary>
+        /// <returns></returns>
+        public List<T> Get(out string skipToken)
+        {
+            return _controller.Get(CreateODataQuery(true), out skipToken);
+        }
+
+        /// <summary>
+        /// Returns one instance of an entity using the specified identifier
+        /// </summary>
+        public T GetEntity(string identifier)
 		{
 			if (string.IsNullOrEmpty(identifier)) throw new ArgumentException("Get entity: Identifier cannot be empty");
 			string query = CreateODataQuery(false);

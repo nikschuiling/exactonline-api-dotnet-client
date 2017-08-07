@@ -21,7 +21,14 @@ namespace ExactOnline.Client.Sdk.UnitTests.MockObjects
 			return null;
 		}
 
-		T IController<T>.GetEntity(string guid, string parameters)
+        List<T> IController<T>.Get(string query, out string token)
+        {
+            token = null;
+            ODataQuery = query;
+            return null;
+        }
+
+        T IController<T>.GetEntity(string guid, string parameters)
 		{
 
 			throw new NotImplementedException();

@@ -8,7 +8,9 @@ namespace ExactOnline.Client.Sdk.Interfaces
 	{
 		List<T> Get(string query);
 
-		T GetEntity(string guid, string parameters);
+        List<T> Get(string query, out string token);
+
+        T GetEntity(string guid, string parameters);
 
 		Boolean Create(ref T entity);
 

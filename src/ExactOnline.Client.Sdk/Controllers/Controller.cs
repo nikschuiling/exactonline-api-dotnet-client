@@ -8,6 +8,8 @@ using ExactOnline.Client.Models;
 using ExactOnline.Client.Sdk.Delegates;
 using ExactOnline.Client.Sdk.Helpers;
 using ExactOnline.Client.Sdk.Interfaces;
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace ExactOnline.Client.Sdk.Controllers
 {
@@ -90,13 +92,54 @@ namespace ExactOnline.Client.Sdk.Controllers
 			return returnList;
 		}
 
-		/// <summary>
-		/// Get entity using specific GUID
-		/// </summary>
-		/// <param name="guid">Global Unique Identifier of the entity</param>
-		/// <param name="parameters">parameters</param>
-		/// <returns>Entity if exists. Null if entity not exists.</returns>
-		public T GetEntity(string guid, string parameters)
+        /// <summary>
+        /// Gets specific collection of entities and return a skip token if there are more than
+        /// 60 entities to be returned.
+        /// </summary>
+        /// <param name="query">oData query</param>
+        /// <param name="token">The skip token if there are more results than could be retrieved
+        /// via the REST API or <code>null</code></param>
+        /// <returns>List of entity Objects</returns>
+        public List<T> Get(string query, out string token)
+        {
+            // Get the response and convert it to a list of entities of the specific type
+            string response = _conn.Get(query);
+
+            // Search for skip token in json response
+            dynamic json = JsonConvert.DeserializeObject(response);
+
+            // This contains the url to the API call for the remaining entities including a skiptoken.
+            string next = json["d"].__next;
+
+            // Skiptoken has format "$skiptoken=xyz" in the url and we want to extract xyz.
+            var match = Regex.Match(next ?? "", @"\$skiptoken=([^&#]*)");
+
+            // Extract the skip token
+            token = match.Success ? match.Groups[1].Value : null;
+
+            // TODO: ApiResponseCleaner should extract Guid
+            response = ApiResponseCleaner.GetJsonArray(response);
+
+            var rc = new EntityConverter();
+            var entities = rc.ConvertJsonArrayToObjectList<T>(response);
+
+            // If the entity isn't managed already, register to managed entity collection
+            foreach (var entity in entities)
+            {
+                AddEntityToManagedEntitiesCollection(entity);
+            }
+
+            // Convert list
+            return entities.ConvertAll(x => x);
+        }
+
+        /// <summary>
+        /// Get entity using specific GUID
+        /// </summary>
+        /// <param name="guid">Global Unique Identifier of the entity</param>
+        /// <param name="parameters">parameters</param>
+        /// <returns>Entity if exists. Null if entity not exists.</returns>
+        public T GetEntity(string guid, string parameters)
 		{
 			if (guid.Contains('}') || guid.Contains('{'))
 			{
